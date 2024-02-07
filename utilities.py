@@ -15,3 +15,9 @@ def create_socket(ip, port):
     client_socket = socket.socket()
     client_socket.connect((ip, port))
     return client_socket
+
+def read_file(path):
+    with open(path, 'r') as file:
+        for row in file:
+            yield row
+
